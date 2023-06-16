@@ -1,0 +1,185 @@
+﻿
+@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@using System.Threading.Channels;
+@inject NavigationManager NavigationManager
+@implements IAsyncDisposable
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">Broadcast Message</div>
+                <div class="card-body">
+                    <form id="broadcastForm" @onsubmit="HandleBroadcastMessage">
+                        <div class="form-group mb-2">
+                            <label for="broadcastMessage">Enter message:</label>
+                            <input @bind="message" type="text" class="form-control" id="broadcastMessage" placeholder="Type your message here">
+                        </div>
+                        <button type="submit" disabled="@(!IsConnected)" class="btn btn-primary btn-block">Broadcast</button>
+                    </form>
+                    <form id="sendOthersForm" @onsubmit="HandleSendToOthers">
+                        <div class="form-group mb-2">
+                            <label for="sendOthersMessage">Enter message:</label>
+                            <input @bind="messageForOthers" type="text" class="form-control" id="sendOthersMessage" placeholder="Type your message here">
+                        </div>
+                        <button type="submit" disabled="@(!IsConnected)" class="btn btn-primary btn-block">Send Others</button>
+                    </form>
+                    <form id="sendSelfForm" @onsubmit="HandleSendToCaller">
+                        <div class="form-group mb-2">
+                            <label for="sendSelfMessage">Enter message:</label>
+                            <input @bind="messageForSelf" type="text" class="form-control" id="sendSelfMessage" placeholder="Type your message here">
+                        </div>
+                        <button type="submit" disabled="@(!IsConnected)" class="btn btn-primary btn-block">Send Self</button>
+                    </form>
+                    <form id="sendSpecificForm" @onsubmit="HandleSendToSpecific">
+                        <div class="form-group mb-2">
+                            <label for="sendSpecificConnectionId">Enter connection Id:</label>
+                            <input @bind="connectionIdOfSpecificUser" type="text" class="form-control" id="sendSpecificConnectionId" placeholder="Enter connection Id">
+                        </div>
+                        <div class="form-group mb-2">
+                            <label for="sendSpecificMessage">Enter message:</label>
+                            <input @bind="messageForSpecificUser" type="text" class="form-control" id="sendSpecificMessage" placeholder="Type your message here">
+                        </div>
+                        <button type="submit" disabled="@(!IsConnected)" class="btn btn-primary btn-block">Send Individual</button>
+                    </form>
+                    <div id="groupPanel" class="card mb-3 mt-3">
+                        <div class="card-header">Groups</div>
+                        <form id="joinGroupForm" @onsubmit="HandleAddUserToGroup">
+                            <div class="form-group mb-2">
+                                <label for="groupToJoin">Enter group name:</label>
+                                <input @bind="groupToJoin" type="text" class="form-control" id="groupToJoin" placeholder="Enter group name">
+                            </div>
+                            <button type="submit" disabled="@(!IsConnected)" class="btn btn-primary btn-block">Join Group</button>
+                        </form>
+                        <form id="leaveGroupForm" @onsubmit="HandleRemoveUserFromGroup">
+                            <div class="form-group mb-2">
+                                <label for="groupToLeave">Enter group name:</label>
+                                <input @bind="groupToLeave" type="text" class="form-control" id="groupToLeave" placeholder="Enter group name">
+                            </div>
+                            <button type="submit" disabled="@(!IsConnected)" class="btn btn-primary btn-block">Leave Group</button>
+                        </form>
+                        <form id="sendToGroupForm" @onsubmit="HandleSendToGroup">
+                            <div class="form-group mb-2">
+                                <label for="groupToSendMessage">Enter group name:</label>
+                                <input @bind="groupToSendMessage" type="text" class="form-control" id="groupToSendMessage" placeholder="Enter group name">
+                            </div>
+                            <div class="form-group mb-2">
+                                <label for="messageToSendToGroup">Enter message:</label>
+                                <input @bind="messageToSendToGroup" type="text" class="form-control" id="messageToSendToGroup" placeholder="Type your message here">
+                            </div>
+                            <button type="submit" disabled="@(!IsConnected)" class="btn btn-primary btn-block">Send Individual</button>
+                        </form>
+                    </div>
+                    <div id="messagePanel" class="card mb-3 mt-3">
+                        <div class="card-header">Message Log</div>
+                        <ul class="card-body" id="messageList">
+                           @foreach(var message in messages)
+                            {
+                                <li>@message</li>
+                            }
+                        </ul>
+                    </div>
+                    <div id="streamPanel" class="card mb-3 mt-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div class="mr-auto">Stream Log</div>
+                            <button onclick="HandleTriggerStream" type="button" class="btn btn-primary" id="triggerStreamButton">Trigger Stream</button>
+                        </div>
+                        <ul class="card-body" id="streamList">
+                            @foreach (var message in streamLog)
+                            {
+                                <li>@message</li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string message = string.Empty;
+    private string messageForOthers = string.Empty;
+    private string messageForSelf = string.Empty;
+    private string messageForSpecificUser = string.Empty;
+    private string connectionIdOfSpecificUser = string.Empty;
+    private string groupToJoin = string.Empty;
+    private string groupToLeave = string.Empty;
+    private string groupToSendMessage = string.Empty;
+    private string messageToSendToGroup = string.Empty;
+
+    private List<string> messages = new();
+    private List<string> streamLog = new();
+
+    private HubConnection hubConnection;
+    private bool IsConnected => hubConnection?.State == HubConnectionState.Connected;
+    private CancellationTokenSource cancellationTokenSource = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder().WithUrl(NavigationManager.ToAbsoluteUri("/messageHub")).Build();
+        hubConnection.On<string>("RecieveMessage", ( message) =>
+        {
+            messages.Add( message);
+            StateHasChanged();  
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task HandleBroadcastMessage()
+    {
+        if (message.Contains(';'))
+        {
+            var channel = Channel.CreateBounded<string>(10);
+            await hubConnection.SendAsync("BroadcastStream", channel.Reader);
+            foreach (var msg in message.Split(';'))
+            {
+                await channel.Writer.WriteAsync(msg);
+            }
+            channel.Writer.Complete();
+        }
+        else
+        {
+            await hubConnection.SendAsync("BroadcastMessage", message);
+        }
+    }
+    private async Task HandleSendToOthers()
+    {
+        await hubConnection.SendAsync("SendToOthers", messageForOthers);
+
+    }
+    private async Task HandleSendToCaller()
+    {
+        await hubConnection.SendAsync("SendToCaller", messageForSelf);
+    }
+    private async Task HandleSendToSpecific()
+    {
+        await hubConnection.SendAsync("SendToSpecificUser", connectionIdOfSpecificUser, messageForSpecificUser);
+    }
+    private async Task HandleAddUserToGroup()
+    {
+        await hubConnection.SendAsync("AddUserToGroup", groupToJoin);
+    }
+    private async Task HandleRemoveUserFromGroup()
+    {
+        await hubConnection.SendAsync("RemoveUserFromGroup", groupToLeave);
+    }
+    private async Task HandleSendToGroup()
+    {
+        await hubConnection.SendAsync("SendToGroup", groupToSendMessage, messageToSendToGroup);
+    }
+    private async Task HandleTriggerStream()
+    {
+        var stream = hubConnection.StreamAsync<string>("TriggerStream", 10, cancellationTokenSource.Token);
+        await foreach(var msg in stream)
+        {
+            streamLog.Add(msg);
+        }
+    }
+    public async ValueTask DisposeAsync()
+    {
+        await hubConnection.DisposeAsync();
+    }
+}

@@ -1,0 +1,89 @@
+﻿@{
+    ViewData["Title"] = "Home | Messages";
+}
+
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">Broadcast Message</div>
+                <div class="card-body">
+                    <form id="broadcastForm">
+                        <div class="form-group mb-2">
+                            <label for="broadcastMessage">Enter message:</label>
+                            <input type="text" class="form-control" id="broadcastMessage" placeholder="Type your message here">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Broadcast</button>
+                    </form>
+                    <form id="sendOthersForm">
+                        <div class="form-group mb-2">
+                            <label for="sendOthersMessage">Enter message:</label>
+                            <input type="text" class="form-control" id="sendOthersMessage" placeholder="Type your message here">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Send Others</button>
+                    </form>
+                    <form id="sendSelfForm">
+                        <div class="form-group mb-2">
+                            <label for="sendSelfMessage">Enter message:</label>
+                            <input type="text" class="form-control" id="sendSelfMessage" placeholder="Type your message here">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Send Self</button>
+                    </form> 
+                    <form id="sendSpecificForm">
+                        <div class="form-group mb-2">
+                            <label for="sendSpecificConnectionId">Enter connection Id:</label>
+                            <input type="text" class="form-control" id="sendSpecificConnectionId" placeholder="Enter connection Id">
+                        </div>
+                        <div class="form-group mb-2">
+                            <label for="sendSpecificMessage">Enter message:</label>
+                            <input type="text" class="form-control" id="sendSpecificMessage" placeholder="Type your message here">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Send Individual</button>
+                    </form>
+                    <div id="groupPanel" class="card mb-3 mt-3">
+                        <div class="card-header">Groups</div>
+                        <form id="joinGroupForm">
+                            <div class="form-group mb-2">
+                                <label for="groupToJoin">Enter group name:</label>
+                                <input type="text" class="form-control" id="groupToJoin" placeholder="Enter group name">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Join Group</button>
+                        </form>
+                        <form id="leaveGroupForm">
+                            <div class="form-group mb-2">
+                                <label for="groupToLeave">Enter group name:</label>
+                                <input type="text" class="form-control" id="groupToLeave" placeholder="Enter group name">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Leave Group</button>
+                        </form>
+                        <form id="sendToGroupForm">
+                            <div class="form-group mb-2">
+                                <label for="groupToSendMessage">Enter group name:</label>
+                                <input type="text" class="form-control" id="groupToSendMessage" placeholder="Enter group name">
+                            </div>
+                            <div class="form-group mb-2">
+                                <label for="messageToSendToGroup">Enter message:</label>
+                                <input type="text" class="form-control" id="messageToSendToGroup" placeholder="Type your message here">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Send Individual</button>
+                        </form>
+                    </div> 
+                    <div id="messagePanel" class="card mb-3 mt-3">
+                        <div class="card-header fw-bold">Message Log</div>
+                        <ul class="card-body" id="messageList">
+                        </ul>
+                    </div>  
+                    <div id="streamPanel" class="card mb-3 mt-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="mr-auto">Stream Log</div>
+                             <button type="button" class="btn btn-primary" id="triggerStreamButton">Trigger Stream</button>
+                        </div>
+                        <ul class="card-body" id="streamList">
+                        </ul>
+                    </div> 
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

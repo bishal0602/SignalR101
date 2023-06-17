@@ -1,0 +1,1 @@
+Just learning SignalR by making a hub and connecting various clients to it based on the book SignalR on dotnet 6 by Fiodar Sazanavets.
